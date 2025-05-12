@@ -9,11 +9,14 @@ const PORT = process.env.PORT || 3000;
 require('dotenv').config();
 connectDB();
 
+const auth = require('./middleware/auth');
 
+
+app.use(auth);
 app.use(express.json());
 
-app.use('/api',userRouter);
 app.use('/api',authRouter);
+app.use('/api',userRouter);
 
 
 app.listen(PORT, () => {

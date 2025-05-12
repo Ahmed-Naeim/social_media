@@ -1,17 +1,24 @@
-const User = require('../models/User.js');
+const User = require('../models/User');
+const bcrypt = require('bcrypt');
 
 const createNewUser = async (req, res) => {
-    if(!req?.body.name || !req?.body.email || !req?.body.password) {
+    const {name, email, pwd} = req.body;
+    if(!name || !email || !pwd) {
         return res.status(400).json({ 'message': 'User data required.' });
     }
+
+    //check for duplicates usernames
+    const duplicate = await User.findOne({username: name}).exec();
+    if (duplicate) return res.sendStatus(409); //Conflict
     try{
+        const hashedPwd = await bcrypt.hash(pwd, 10);
         const result = await User.create({
-            name: req.body.name,
-            email: req.body.email,
-            password: req.body.password
+            name: name,
+            email: email,
+            password: pwd
         });
         console.log(result);
-        res.status(201).json(result); //send the user to the client
+        res.status(201).json({"success": `New user ${user} created!`});
     }
     catch (err) {
         console.error(err);
@@ -20,23 +27,13 @@ const createNewUser = async (req, res) => {
 };
 
 const getUser = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const user = await User.findById(userId);
-
-        const userData = {
-            // id: user._id,
-            name: user.name,
-            email: user.email,
-            posts: user.posts
-        };
-
-        console.log(userData);
-        res.status(200).json(userData);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Internal server error.' });
+    if(!req?.params?.id) return res.status(400).json({'message': 'User ID required'});
+    const user = await User.findOne({_id: req.params.id}).exec(); //findOne method returns a promise, so we need to use await to get the result
+    
+    if(!user){
+        return res.status(204).json({"message": `No user matches ID ${req.body.id}`});
     }
+    res.json(user); //sends the user to the client
 };
 
 
